@@ -1,21 +1,20 @@
-/node_modules
-/public/hot
-/public/storage
-/storage/*.key
-/vendor
-/.idea
-/.vagrant
-Homestead.json
-Homestead.yaml
-npm-debug.log
-yarn-error.log
-.env
-.phpunit.result.cache
-.phpunit.cache
-.sql
-.codebuddy
+# Python & uv
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+dist/
+build/
 
-# Rust compilation dirs
-rust/*/target
-# Compiled rust apps (rust modules are recompiled during container start)
-storage/rust-libs/*.so
+# Node & Frontend
+node_modules/
+
+# Environments & Secret
+.env
+
+# Rust
+rust/*/target/
+*.so

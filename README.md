@@ -1,281 +1,99 @@
 <div align="center">
 
-🌟 **If you find this project useful, please consider giving it a star!** 🌟
+# 🌌 OGameX (Python FastAPI & uv Edition)
 
-</div>
-<p align="center"><img align="center" src="https://github.com/lanedirt/OGameX/assets/6917405/c81061d5-0310-4574-a91d-1ea155b567c0" alt="OGameX logo" /></p>
+**Next-Gen Open-Source OGame Redesign Clone with High-Performance Python Core**
 
-<p align="center">
-<a href="https://main.ogamex.dev">Live demo 🚀</a> • <a href="#installation">Installation 📦</a> • <a href="https://github.com/lanedirt/OGameX/blob/main/CONTRIBUTING.md">Contributing 💻</a>
-</p>
-
-
-<p align="center">
-<strong>Open-source OGame redesign clone</strong>
-</p>
-
-<div align="center">
-
-[<img src="https://img.shields.io/github/v/release/lanedirt/OGameX?include_prereleases&logo=github">](https://github.com/lanedirt/OGameX/releases)
-[<img src="https://img.shields.io/github/actions/workflow/status/lanedirt/OGameX/run-docker-compose-prod.yml?label=docker-compose%20build">](https://github.com/lanedirt/OGameX/actions/workflows/run-docker-compose-prod.yml)
-[<img src="https://img.shields.io/github/actions/workflow/status/lanedirt/OGameX/run-tests-docker-compose.yml?label=tests">](https://github.com/lanedirt/OGameX/actions/workflows/run-tests-docker-compose.yml)
-[<img src="https://img.shields.io/github/actions/workflow/status/lanedirt/OGameX/run-phpstan-code-analysis.yml?label=static%20code%20analysis">](https://github.com/lanedirt/OGameX/actions/workflows/run-phpstan-code-analysis.yml)
-[<img src="https://img.shields.io/github/actions/workflow/status/lanedirt/OGameX/run-laravel-pint-code-style-checker.yml?label=psr-12%20code%20style">](https://github.com/lanedirt/OGameX/actions/workflows/run-laravel-pint-code-style-checker.yml)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![uv](https://img.shields.io/badge/Package%20Manager-uv-DE5FE9?logo=astral&logoColor=white)](https://docs.astral.sh/uv/)
+[![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 </div>
 
-<div align="center">
+---
 
-[![good first issues open](https://img.shields.io/github/issues/lanedirt/OGameX/good%20first%20issue.svg?logo=github)](https://github.com/lanedirt/OGameX/issues?q=is%3Aopen+is%3Aissue+label%3A"good+first+issue")
-[<img alt="Discord" src="https://img.shields.io/discord/1278814992988110922?logo=discord&logoColor=%237289da&label=join%20discord%20chat&color=%237289da">](https://discord.gg/HJ4QRxxB5N)
+## 📖 소개 (Introduction)
 
-</div>
+**OGameX**는 초고속 Rust 기반 Python 패키지 매니저인 **`uv`**로 의존성을 관리하며, **FastAPI**, **실시간 WebSocket**, **Noto Sans CJK 다국어 Glassmorphism SPA** 및 **Docker Compose**로 구동되는 현대적인 우주 전략 시뮬레이션 게임 엔진입니다.
 
+---
 
-OGameX is an open-source OGame redesign clone. This clone is built fully from scratch using the latest Laravel framework version and uses modern PHP practices. All major functionality is covered by unit and feature tests which automatically run on every build.
+## ⚡ 주요 특징 (Key Features)
 
-We welcome any and all contributions to this project! If you want to help out, please read the [contributing](#contributing) section. If you have any questions you can [join the OGameX discord](https://discord.com/invite/HJ4QRxxB5N) to get in touch with the maintainers and other contributors.
+- **Next-Gen Dependency Management with `uv`**: `pip`/수동 `venv` 관리의 번거로움 없이 `uv sync`, `uv run`으로 10~100배 빠른 패키지 해결 및 자동 실행
+- **High-Performance Async Backend**: `FastAPI` + `Pydantic V2` + `SQLAlchemy 2.0 (asyncio)`
+- **Real-Time WebSockets**: 행성 자원 틱 및 함대 비행 알림 실시간 동기화
+- **Multi-Language (KO / EN)**: Noto Sans CJK 기반 한글/영문 실시간 언어 전환 지원
+- **Ultra-Fast Rust Battle Engine**: 대규모 함대 전투 시뮬레이션 고성능 FFI 연동
+- **Dockerized One-Click Deploy**: `docker-compose` 단일 명령어로 Backend, Frontend, MySQL, Redis 완벽 오케스트레이션
 
-Disclaimer: this project is purely fan-based and does not contain any commercial features. All backend code is written from scratch. The rights and concepts for the artwork and frontend belong to the original creators: GameForge GmbH. Support them by checking out the official version: https://ogame.org.
+---
 
-## 🖥️ Live demo
-- Main branch (nightly builds): [https://main.ogamex.dev](https://main.ogamex.dev)
-- Latest stable release **(0.14.0)**: [https://release.ogamex.dev](https://release.ogamex.dev)
+## 🚀 빠른 시작 (Quick Start with Docker Compose)
 
-## 📝 Table of Contents
-- [1. Example screenshots](#screenshots)
-- [2. About the author](#author)
-- [3. Goal](#goal)
-- [4. Roadmap](#roadmap)
-  - [a) Upcoming Features](#upcoming-features)
-- [5. Contributing](#contributing)
-- [6. Disclaimer](#disclaimer)
-- [7. Installation](#installation)
-  - [a) Development: Install OGameX using Docker](#development)
-  - [b) Production: Install OGameX using Docker](#production)
-- [8. Upgrade](#upgrade)
-- [9. Support](#support)
-- [10. Sponsorship](#sponsorship)
-- [11. License](#license)
-- [12. OGameX related projects](#related-projects)
+```bash
+# 1. 저장소 클론 및 이동
+git clone https://github.com/lanedirt/OGameX.git
+cd OGameX
 
-## <a name="screenshots"></a> 🖥️ 1. Example screenshots
+# 2. Docker Compose 빌드 및 실행
+docker-compose up -d --build
+```
 
+### 🌐 서비스 접속 안내
+- **메인 게임 웹 인터페이스**: [http://localhost](http://localhost) (포트 80)
+- **FastAPI 대화형 API 문서 (Swagger UI)**: [http://localhost/docs](http://localhost/docs)
 
-<img width="1142" alt="Screenshot 2024-10-06 at 15 41 14" src="https://github.com/user-attachments/assets/7f9041ad-82cd-42b0-acd1-0036c0f49da2">
-<img width="1129" alt="Screenshot 2024-10-06 at 15 41 45" src="https://github.com/user-attachments/assets/d8a9e612-1433-4750-9f5f-05246f642740">
-<img width="1142" alt="Screenshot 2024-10-06 at 15 42 05" src="https://github.com/user-attachments/assets/aaf9ede8-0aab-4985-87f5-3016eef4fa5f">
-<img width="1132" alt="Screenshot 2024-10-06 at 15 42 44" src="https://github.com/user-attachments/assets/cb112ca3-73d5-42ba-98f1-be844533be41">
-<img width="1147" alt="Screenshot 2024-10-06 at 15 43 18" src="https://github.com/user-attachments/assets/d90a0651-c841-4f3a-a119-8abde4c45b90">
+---
 
-## <a name="author"></a> ✨ 2. About the author
+## 🛠️ 로컬 개발 환경 (Local Development with uv)
 
-My ([@lanedirt](https://github.com/lanedirt)) journey into software development began in 2007 at the age of 14 when I discovered the source code for Ugamela, an early open-source PHP clone of OGame. I really liked running my own browser game server and dedicated myself to modifying this version and translating it to Dutch, leading to the launch of OGameX.nl. This server, active from 2007 to 2009, nurtured a small yet engaged community. This experience not only sparked my passion for software development but also laid the groundwork for my professional career. OGame has always held a special place in my heart, which is why now, 15 years later, I've decided to return to it and create this open-source clone from the ground up.
+수동으로 `venv`를 만들고 활성화할 필요가 없습니다. `uv`가 프로젝트 루트의 `pyproject.toml`과 `uv.lock`을 기반으로 모든 환경을 자동으로 격리 관리합니다.
 
-## <a name="goal"></a> ✨ 3. Goal
+### 1. 의존성 동기화 (최초 1회)
+```bash
+# uv 설치 (미설치 시)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-The primary goal of this fan-based project is to engineer a faithful rendition of OGame, specifically reflecting its state prior to the Lifeforms update introduced in 2022. This initiative, purely fan-based and non-commercial, is pursued strictly for educational purposes.
+# 의존성 자동 동기화
+uv sync
+```
 
-## <a name="roadmap"></a> 🖥️ 4. Roadmap
+### 2. 백엔드 개발 서버 실행
+```bash
+# uv run으로 가상환경 진입 없이 바로 실행
+uv run uvicorn python.app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
-OGameX is under active development with a lot of core features already implemented and working:
+### 3. 테스트 실행 (Pytest)
+```bash
+uv run pytest python/tests/
+```
 
-- Planets / buildings / research / shipyard / defense / galaxy / highscores / messages
-- Fleet dispatch missions (transport, deployment, colonisation, espionage, attack, recycle, moon destruction)
-- Missile attacks
-- Battle engine
-  - Rust version for high performance via PHP FFI (up to 200x faster compared to PHP)
-  - PHP version as fall-back
-- Moon
-  - Moon creation through debris field after battle
-  - Moon buildings, phalanx, jump gate
-- Wreck fields / Space Dock
-- Character classes
-- In-game chat
-- Buddies / notes / fleet templates
-- Admin panel
-- Expedition mission with various outcomes
-- Basic dark matter features (non-commercial), including merchant and planet relocate
-- Alliances
-- ACS fleet dispatch missions
-- Multi-language
+---
 
-### <a name="upcoming-features"></a> Upcoming Features
+## 📂 프로젝트 구조 (Project Structure)
 
-The next major upcoming features that are being worked on:
+```text
+.
+├── pyproject.toml             # uv 표준 프로젝트 및 의존성 정의
+├── uv.lock                    # 초고속/재현 가능한 의존성 잠금 파일
+├── docker-compose.yml         # 전체 컨테이너 오케스트레이션
+├── Dockerfile                 # uv 기반 초경량/초고속 FastAPI 백엔드 이미지
+├── nginx.conf                 # Nginx 리버스 프록시 및 정적 자산 라우팅
+├── frontend/                  # Glassmorphism SPA 프론트엔드 (다국어 지원)
+│   ├── index.html
+│   └── src/ (main.js, style.css, i18n.js)
+├── python/                    # FastAPI 비동기 백엔드
+│   ├── app/ (core, game_objects, models, routers, schemas, services)
+│   └── tests/ (pytest 테스트 스위트)
+└── rust/                      # 고성능 FFI 전투 시뮬레이션 라이브러리
+```
 
-- Improved fleet mission processing via worker queue
-- All dark matter features (non-commercial)
-- General bugfixes and stability improvements
-- More admin / server management features
+---
 
-## <a name="contributing"></a> 🚀 5. Contributing
+## 📜 라이선스 (License)
 
-Contributions are warmly welcomed, whether in development, testing, or spreading the word. Feel free to submit pull requests or contact me for any other contributions.
-
-A good starting point are issues labeled as "good first issue".
-
-[![good first issues open](https://img.shields.io/github/issues/lanedirt/OGameX/good%20first%20issue.svg?logo=github)](https://github.com/lanedirt/OGameX/issues?q=is%3Aopen+is%3Aissue+label%3A"good+first+issue")
-
-Read the [CONTRIBUTING.md](https://github.com/lanedirt/OGameX/blob/main/CONTRIBUTING.md) file for more information.
-
-## <a name="disclaimer"></a> 📓 6. Disclaimer
-
-This project is a non-commercial hobby project. All rights and concepts related to OGame are owned by GameForge GmbH. We encourage supporters to try the official OGame at https://ogame.org to support its creators.
-
-## <a name="installation"></a> 🖥️ 7. Installation
-The recommended way to install OGameX is by running the bundled Docker containers. This takes care of all the dependencies and is the easiest way to get started.
-
-If you instead wish to install OGameX manually, note that OGameX requires PHP ^8.5. See the list of requirements for Laravel 13.x and how to deploy manually to a server here: https://laravel.com/docs/13.x/deployment.
-
-### <a name="development"></a> a) Install for local development
-For local development use the default docker-compose file that is included in this repository. This configuration is optimized for development and includes several tools that are useful for debugging and testing.
-
-Please note that performance of the development mode is slow on Windows (compared to MacOS/Linux) due to overhead of running Docker on Windows. Loading pages with development mode enabled can take multiple seconds on Windows. If you want to run OGameX on Windows, I advise to use the production mode instead. One of the main differences is that the production configuration enables PHP OPcache which speeds up the application, but this also means that the PHP files are not updated (instantly) when you change them. This makes it less suitable for development.
-
-1. Clone the repository.
-  ```
-  $ git clone https://github.com/lanedirt/OGameX.git
-  $ cd OGameX
-  ```
-
-2. Launch the project using Docker Compose:
-  ```
-  $ docker compose up -d
-  ```
-  > The default setup binds to ports 80/443. Modify `docker-compose.yml` if needed. PhpMyAdmin is also included for database management and is bound to port 8080. If you don't create a .env, the default .env.example will be copied to create it.
-
-**Important:** it can take up to 10 minutes for the `ogamex-app` container to start, this is because of composer initialization and Rust compiling that happens on the first run. Please be patient and wait for all containers to have fully started.
-
-After the docker containers have started, visit http://localhost to access OGameX.
-
-Create a new account to start using OGameX. The first account created will be automatically assigned the admin role.
-
-> Note: if you need to run manual `php artisan` commands, you can SSH into the `ogamex-app` container with the `docker compose exec -it ogamex-app bash` command.
-
-### <a name="production"></a> b) Install for production
-For production there is a separate docker-compose file called `docker-compose.prod.yml`. This configuration contains
-several performance optimizations and security settings that are not present in the development configuration.
-
-***Caution:*** the production configuration is not yet fully optimized and should be used with caution. As an example, the database root user uses a default password which should be changed to something unique. You should review all settings before deploying this project to a publicly accessible server.
-
-The instructions below are for Linux. OGameX should also work under Docker for Windows but the steps might be a little bit different.
-
-1. Clone the git repo.
-  ```
-  $ git clone https://github.com/lanedirt/OGameX.git
-  $ cd OGameX
-  ```
-
-2. Copy `.env.example-prod` to `.env`.
-  ```
-  $ cp .env.example-prod .env
-  ```
-
-3. Launch the project using Docker Compose:
-  ```
-  $ docker compose -f docker-compose.prod.yml up -d --build --force-recreate
-  ```
-
-  > The default setup binds to ports 80/443, to change it modify `docker-compose.prod.yml`. PhpMyAdmin is also included for database management and is bound to port 8080, however to access it you need to explicitly specify your IP addresses via `./docker/phpmyadmin/.htaccess` for safety purposes.
-
-**Important:** it can take up to 10 minutes for the `ogamex-app` container to start, this is because of composer initialization and Rust compiling that happens on the first run. Please be patient and wait for all containers to have fully started.
-
-After the docker containers have started, visit https://localhost to access OGameX.
-
-Create a new account to start using OGameX. The first account created will be automatically assigned the admin role.
-
-> Note: The production version runs in forced-HTTPS (redirect) mode by default using a self-signed SSL certificate. If you want to access the application via HTTP, open `.env` and change `APP_ENV` from `production` to `local`.
-
-## <a name="upgrade"></a> 🖥️ 8. Upgrade and misc instructions
-
-### Upgrade OGameX to a new version
-If you want to upgrade an existing installation of OGameX to a new version, follow these steps:
-
-1. Stop the existing containers:
-
-  **For development:**
-  ```
-  $ docker compose down
-  ```
-  **For production:**
-  ```
-  $ docker compose -f docker-compose.prod.yml down
-  ```
-  2. Pull the latest changes from the main branch or checkout the new release tag:
-  ```
-  $ git pull origin main
-  ```
-  -- or --
-  ```
-  $ git checkout 0.14.0 # replace with the latest release tag
-  ```
-  3. Rebuild and start the containers:
-
-  **For development:**
-  ```
-  $ docker compose up -d --build --force-recreate --remove-orphans
-  ```
-  **For production:**
-  ```
-  $ docker compose -f docker-compose.prod.yml up -d --build --force-recreate --remove-orphans
-  ```
-  > When the docker containers are started, the entrypoint script in `./docker/entrypoint.sh` will automatically run the appropriate laravel install commands to upgrade the database schema and refresh the cache. Note that depending on the migrations this might take a short while. After the containers are started, you can visit the application at `https://localhost` (or http://localhost) to check if the upgrade was successful. If you run into any issues, please check the logs for more information or open an issue on GitHub.
-
-### Assigning admin role
-By default, the first registered user is assigned the admin role which can see the admin bar and is able to change server settings. You can also assign the admin role manually via the command line (run inside the `ogamex-app` container; see the development note above for `docker compose exec`):
-  ```
-  $ docker compose exec ogamex-app php artisan ogamex:admin:assign-role {username}
-  ```
-  To remove the admin role from a user, use the following command:
-  ```
-  $ docker compose exec ogamex-app php artisan ogamex:admin:remove-role {username}
-  ```
-  For production, add `-f docker-compose.prod.yml` to the `docker compose` commands above.
-
-## <a name="support"></a> 📞 9. Support
-
-Did you encounter issues in this project? Please open a ticket on GitHub and we'll try to help you out as soon as possible.
-
-## <a name="sponsorship"></a> 💰 10. Sponsorship
-We thank the following parties for sponsoring this project:
-
-<table>
-  <tr>
-    <td align="center" width="200px">
-      <a href="https://www.jetbrains.com/">
-        <img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg" width="100" alt="JetBrains Logo">
-      </a>
-      <br>
-      <strong>JetBrains</strong>
-      <br>
-      Providing free open-source licenses for PhpStorm, WebStorm, and DataGrip.
-    </td>
-    <td align="center" width="200px">
-      <!-- Placeholder for future sponsor -->
-    </td>
-    <td align="center" width="200px">
-      <!-- Placeholder for future sponsor -->
-    </td>
-  </tr>
-</table>
-
-Interested in supporting OGameX? We welcome sponsorships of all sizes! Your support helps us maintain and improve this open-source project. Please get in touch with us via GitHub or Discord to discuss sponsorship opportunities.
-
-## <a name="license"></a> 📰 11. License
-
-The OGameX Laravel source code is open-source software licensed under the MIT license. See the LICENSE file for more details. All rights and concepts related to OGame are owned by GameForge GmbH.
-
-## <a name="related-projects"></a> 🌍 12. OGameX related projects
-
-The following projects either host OGameX servers or are based on the OGameX core.
-
-*Note: these projects are maintained independently and are not affiliated with the OGameX project or its maintainers in any way.*
-
-| Project Name | Description | Link | Type |
-|-------------|-------------|------|------|
-| MWarfare | MWarfare is derived from the OGameX project, it takes the game forward using modern technology and game design to create a more realistic version of OGame that the community has long deserved. | https://mwarfare.com/ | Not Open Source
-| OGameX Combat Simulator | High-performance OGame combat simulator based on the OGameX Rust battle engine. Features a blazing fast Rust-powered WASM engine (~200x faster than PHP), client-side calculations that work offline, and accurate battle simulations based on OGameX formulas. | [GitHub](https://github.com/rbardtke/OgameX-Combat-Simulator) | Open Source (MIT) |
-| Space Rivals | Built on top of the OGameX core with many different customizations and features. | https://space-rivals.net | Not Open Source |
-
-Do you want your own OGameX-related project to be listed here? Create an issue in the [GitHub issues page](https://github.com/lanedirt/OGameX/issues) and provide details about your project.
+본 프로젝트는 [MIT License](LICENSE)를 따릅니다.

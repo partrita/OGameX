@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OGameX - Next-Gen Space Strategy</title>
+  
+  <!-- Google Fonts: Noto Sans CJK KR / KR-compatible font + JetBrains Mono for numbers -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body class="ogame-theme">
+  <div id="app">
+    <!-- Top Resource Bar -->
+    <header class="resource-bar glass-panel">
+      <div class="planet-selector">
+        <span class="planet-icon">🪐</span>
+        <div class="planet-meta">
+          <h3 id="current-planet-name" class="planet-name">모행성</h3>
+          <span id="current-planet-coord" class="coord-badge">[1:100:5]</span>
+        </div>
+      </div>
+
+      <div class="resources-container">
+        <div class="resource-card metal">
+          <div class="res-icon">⛏️</div>
+          <div class="res-info">
+            <div class="res-label" data-i18n="metal">메탈</div>
+            <div id="res-metal" class="res-val">25,400</div>
+            <div class="storage-bar"><div class="fill" style="width: 35%"></div></div>
+          </div>
+        </div>
+
+        <div class="resource-card crystal">
+          <div class="res-icon">💎</div>
+          <div class="res-info">
+            <div class="res-label" data-i18n="crystal">크리스탈</div>
+            <div id="res-crystal" class="res-val">14,200</div>
+            <div class="storage-bar"><div class="fill" style="width: 55%"></div></div>
+          </div>
+        </div>
+
+        <div class="resource-card deut">
+          <div class="res-icon">💧</div>
+          <div class="res-info">
+            <div class="res-label" data-i18n="deuterium">듀테륨</div>
+            <div id="res-deut" class="res-val">8,300</div>
+            <div class="storage-bar"><div class="fill" style="width: 20%"></div></div>
+          </div>
+        </div>
+
+        <div class="resource-card energy">
+          <div class="res-icon">⚡</div>
+          <div class="res-info">
+            <div class="res-label" data-i18n="energy">에너지</div>
+            <div id="res-energy" class="res-val positive">+1,240</div>
+            <div class="storage-bar"><div class="fill" style="width: 80%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- User Profile / Auth Button -->
+        <div class="user-profile-badge">
+          <span id="user-display-name">사령관: <strong>admin</strong></span>
+          <button id="btn-logout" class="btn-sm" data-i18n="btnLogout">로그아웃</button>
+          <button id="btn-show-auth" class="btn-sm hidden" data-i18n="btnLogin">로그인</button>
+        </div>
+
+        <!-- Language Switcher -->
+        <div class="lang-switcher">
+          <button id="btn-lang-ko" class="lang-btn active">🇰🇷 KO</button>
+          <button id="btn-lang-en" class="lang-btn">🇺🇸 EN</button>
+        </div>
+
+        <div class="user-status">
+          <span class="status-indicator online"></span>
+          <span id="ws-status" data-i18n="liveSync">실시간 동기화</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Auth Modal (Login / Register) -->
+    <div id="auth-modal" class="modal-overlay hidden">
+      <div class="modal-content glass-panel">
+        <div class="auth-tabs">
+          <button id="tab-btn-login" class="auth-tab-btn active" data-i18n="loginTitle">사령관 로그인</button>
+          <button id="tab-btn-register" class="auth-tab-btn" data-i18n="registerTitle">신규 등록</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="form-login" class="auth-form">
+          <div class="form-row">
+            <label data-i18n="usernameLabel">사령관 이름</label>
+            <input type="text" id="login-username" required placeholder="예: admin, player1" />
+          </div>
+          <div class="form-row">
+            <label data-i18n="passwordLabel">접속 암호</label>
+            <input type="password" id="login-password" required placeholder="••••••••" />
+          </div>
+          <button type="submit" class="btn-primary" data-i18n="btnLogin">로그인</button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="form-register" class="auth-form hidden">
+          <div class="form-row">
+            <label data-i18n="usernameLabel">사령관 이름</label>
+            <input type="text" id="reg-username" required placeholder="사령관 고유 식별명" />
+          </div>
+          <div class="form-row">
+            <label data-i18n="passwordLabel">접속 암호</label>
+            <input type="password" id="reg-password" required minlength="4" placeholder="최소 4자 이상" />
+          </div>
+          <div class="form-row">
+            <label data-i18n="planetNameLabel">모행성 이름</label>
+            <input type="text" id="reg-planet-name" value="Homeworld" placeholder="모행성 명칭" />
+          </div>
+          <button type="submit" class="btn-primary" data-i18n="btnRegister">신규 행성 개척 (가입)</button>
+        </form>
+      </div>
+    </div>
+
+
+    <!-- Main Game Container -->
+    <div class="main-layout">
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar glass-panel">
+        <div class="brand">
+          <h2>OGame<span>X</span></h2>
+          <span class="version-tag">FastAPI Engine</span>
+        </div>
+
+        <nav class="nav-menu">
+          <button class="nav-item active" data-tab="overview">
+            <span class="icon">🌌</span> <span data-i18n="navOverview">행성 개요</span>
+          </button>
+          <button class="nav-item" data-tab="resources">
+            <span class="icon">🏭</span> <span data-i18n="navResources">자원 생산</span>
+          </button>
+          <button class="nav-item" data-tab="facilities">
+            <span class="icon">🔬</span> <span data-i18n="navFacilities">시설 관리</span>
+          </button>
+          <button class="nav-item" data-tab="shipyard">
+            <span class="icon">🚀</span> <span data-i18n="navShipyard">조선소</span>
+          </button>
+          <button class="nav-item" data-tab="fleet">
+            <span class="icon">🛸</span> <span data-i18n="navFleet">함대 발송</span>
+          </button>
+          <button class="nav-item" data-tab="galaxy">
+            <span class="icon">🔭</span> <span data-i18n="navGalaxy">은하계 성도</span>
+          </button>
+        </nav>
+      </aside>
+
+      <!-- Content View -->
+      <main class="content-area">
+        <!-- Overview Tab -->
+        <section id="tab-overview" class="view-panel active">
+          <div class="view-header">
+            <h1 data-i18n="commandTitle">행성 사령부</h1>
+            <p class="subtitle" data-i18n="commandSubtitle">FastAPI 비동기 초고속 코어로 실시간 상태 연산 중</p>
+          </div>
+
+          <div class="grid-overview">
+            <div class="planet-visual glass-panel">
+              <div class="planet-render">
+                <div class="planet-sphere"></div>
+                <div class="planet-ring"></div>
+              </div>
+              <div class="planet-stats">
+                <div class="stat-item">
+                  <span class="label" data-i18n="statDiameter">행성 지름</span>
+                  <span id="stat-diameter" class="value">12,800 km</span>
+                </div>
+                <div class="stat-item">
+                  <span class="label" data-i18n="statFields">개발 구역</span>
+                  <span id="stat-fields" class="value">51 / 163</span>
+                </div>
+                <div class="stat-item">
+                  <span class="label" data-i18n="statTemp">행성 기온</span>
+                  <span id="stat-temp" class="value">-10°C to 30°C</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-card glass-panel">
+              <h3 data-i18n="fleetSimTitle">고속 함대 발송 시뮬레이터</h3>
+              <form id="fleet-sim-form" class="fleet-form">
+                <div class="form-row">
+                  <label data-i18n="targetCoordsLabel">목표 좌표 (은하 : 태양계 : 위치)</label>
+                  <div class="coord-inputs">
+                    <input type="number" id="target-galaxy" value="1" min="1" max="9" />
+                    <input type="number" id="target-system" value="105" min="1" max="499" />
+                    <input type="number" id="target-position" value="8" min="1" max="16" />
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <label data-i18n="fleetSelectionLabel">함대 편성</label>
+                  <div class="ship-select-grid">
+                    <div class="ship-input-item">
+                      <span data-i18n="shipSmallCargo">소형 수송선 (202)</span>
+                      <input type="number" id="ship-202" value="10" min="0" />
+                    </div>
+                    <div class="ship-input-item">
+                      <span data-i18n="shipLightFighter">경전투기 (204)</span>
+                      <input type="number" id="ship-204" value="5" min="0" />
+                    </div>
+                    <div class="ship-input-item">
+                      <span data-i18n="shipCruiser">순양함 (206)</span>
+                      <input type="number" id="ship-206" value="0" min="0" />
+                    </div>
+                  </div>
+                </div>
+
+                <button type="submit" id="btn-calc-fleet" class="btn-primary" data-i18n="btnCalculateFlight">
+                  ⚡ 비행 및 연료 시뮬레이션
+                </button>
+              </form>
+
+              <div id="fleet-result" class="fleet-calc-box hidden">
+                <div class="res-row"><span data-i18n="resDistance">비행 거리:</span> <strong id="res-distance">-</strong></div>
+                <div class="res-row"><span data-i18n="resFlightTime">비행 소요 시간:</span> <strong id="res-time">-</strong></div>
+                <div class="res-row"><span data-i18n="resFuel">듀테륨 연료 소모:</span> <strong id="res-fuel">-</strong></div>
+                <div class="res-row"><span data-i18n="resCargo">총 화물 적재량:</span> <strong id="res-cargo">-</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Fleet Movements Panel -->
+          <div class="active-missions-panel glass-panel" style="margin-top: 20px; padding: 20px;">
+            <h3 data-i18n="activeMissionsTitle" style="color: var(--accent-cyan); font-family: var(--font-heading); margin-bottom: 12px;">
+              실시간 함대 기동 및 미션 현황
+            </h3>
+            <div class="galaxy-table-container">
+              <table class="galaxy-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="colMissionType">임무 유형</th>
+                    <th data-i18n="colDestination">목표 좌표</th>
+                    <th data-i18n="colFleetShips">함선 규모</th>
+                    <th data-i18n="colRemainingTime">도착까지</th>
+                    <th data-i18n="colStatus">상태</th>
+                  </tr>
+                </thead>
+                <tbody id="active-missions-body">
+                  <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted);" data-i18n="noActiveMissions">
+                      현재 비행 중인 함대 미션이 없습니다.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- Resources Tab -->
+        <section id="tab-resources" class="view-panel">
+          <div class="view-header">
+            <h1 data-i18n="resourcesTitle">자원 생산 시설</h1>
+            <p class="subtitle" data-i18n="resourcesSubtitle">행성 광산 및 발전소를 업그레이드하여 자원 채굴량을 극대화합니다</p>
+          </div>
+          <div id="resources-list" class="items-grid"></div>
+        </section>
+
+        <!-- Facilities Tab -->
+        <section id="tab-facilities" class="view-panel">
+          <div class="view-header">
+            <h1 data-i18n="facilitiesTitle">행성 인프라 시설</h1>
+            <p class="subtitle" data-i18n="facilitiesSubtitle">고급 연구 및 함선 건조를 위한 기반 시설을 건설합니다</p>
+          </div>
+          <div id="facilities-list" class="items-grid"></div>
+        </section>
+
+        <!-- Shipyard Tab -->
+        <section id="tab-shipyard" class="view-panel">
+          <div class="view-header">
+            <h1 data-i18n="shipyardTitle">궤도 조선소</h1>
+            <p class="subtitle" data-i18n="shipyardSubtitle">전투 함대 및 화물 수송선을 대량 건조합니다</p>
+          </div>
+          <div id="shipyard-list" class="items-grid"></div>
+        </section>
+
+        <!-- Fleet Tab -->
+        <section id="tab-fleet" class="view-panel">
+          <div class="view-header">
+            <h1 data-i18n="fleetTitle">함대 사령부 발송</h1>
+            <p class="subtitle" data-i18n="fleetSubtitle">은하계 전역으로 탐사, 수송, 정거, 공격 임무를 지시합니다</p>
+          </div>
+          <div class="grid-overview">
+            <div class="action-card glass-panel">
+              <h3 data-i18n="availableShips">보유 함선 편성</h3>
+              <div id="fleet-dispatch-ships" class="ship-select-grid"></div>
+            </div>
+
+            <div class="action-card glass-panel">
+              <h3 data-i18n="fleetMission">임무(Mission) 설정</h3>
+              <form id="fleet-send-form" class="fleet-form">
+                <div class="form-row">
+                  <label data-i18n="targetCoordsLabel">목표 좌표 (은하 : 태양계 : 위치)</label>
+                  <div class="coord-inputs">
+                    <input type="number" id="fleet-target-galaxy" value="1" min="1" max="9" />
+                    <input type="number" id="fleet-target-system" value="100" min="1" max="499" />
+                    <input type="number" id="fleet-target-position" value="12" min="1" max="16" />
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <label data-i18n="fleetMission">임무 유형</label>
+                  <select id="fleet-mission-select" class="coord-inputs" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.4); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px;">
+                    <option value="transport">자원 수송 (Transport)</option>
+                    <option value="deploy">함대 배치 (Deploy)</option>
+                    <option value="attack">공격 작전 (Attack)</option>
+                    <option value="harvest">잔해 수거 (Harvest)</option>
+                  </select>
+                </div>
+
+                <button type="submit" id="btn-submit-fleet" class="btn-primary" data-i18n="btnSendFleet">
+                  🚀 함대 발송
+                </button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- Galaxy Tab -->
+        <section id="tab-galaxy" class="view-panel">
+          <div class="view-header">
+            <h1 data-i18n="galaxyTitle">은하계 성도 탐색</h1>
+            <p class="subtitle" data-i18n="galaxySubtitle">태양계 내 행성 좌표, 플레이어 식별 및 잔해 필드를 스캔합니다</p>
+          </div>
+
+          <div class="galaxy-controls glass-panel">
+            <div class="galaxy-input-group">
+              <span>은하:</span>
+              <input type="number" id="galaxy-num" value="1" min="1" max="9" />
+            </div>
+            <div class="galaxy-input-group">
+              <span>태양계:</span>
+              <input type="number" id="system-num" value="100" min="1" max="499" />
+            </div>
+            <button id="btn-scan-galaxy" class="btn-primary" style="margin-top: 0; padding: 6px 16px;" data-i18n="btnScanSystem">
+              태양계 스캔
+            </button>
+          </div>
+
+          <div class="galaxy-table-container glass-panel">
+            <table class="galaxy-table">
+              <thead>
+                <tr>
+                  <th data-i18n="colPos">위치</th>
+                  <th data-i18n="colPlanet">행성명</th>
+                  <th data-i18n="colPlayer">사령관</th>
+                  <th data-i18n="colAlliance">동맹</th>
+                  <th data-i18n="colDebris">우주 잔해</th>
+                  <th data-i18n="colAction">작전</th>
+                </tr>
+              </thead>
+              <tbody id="galaxy-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

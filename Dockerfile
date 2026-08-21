@@ -1,73 +1,26 @@
-FROM php:8.5-fpm
+# High-performance Python container with uv
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
-# Copy composer.lock and composer.json
-COPY composer.lock composer.json /var/www/
+WORKDIR /app
 
-# Set working directory
-WORKDIR /var/www
+# Enable bytecode compilation
+ENV UV_COMPILE_BYTECODE=1
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libonig-dev \
-    mariadb-client \
-    libpng-dev \
-    libjpeg62-turbo-dev \
-    libfreetype6-dev \
-    locales \
-    zip \
-    jpegoptim optipng pngquant gifsicle \
-    vim \
-    libzip-dev \
-    unzip \
-    git \
-    curl \
-    dos2unix \
-    pkg-config \
-    libffi-dev  # Install PHP FFI development files required to interface with Rust for BattleEngine  \
-    && \ apt-get clean && rm -rf /var/lib/apt/lists/ # Clear cache
+# Copy project specifications and lockfile for caching
+COPY pyproject.toml uv.lock README.md /app/
 
-# Install extensions
-RUN docker-php-ext-install ffi pdo_mysql mbstring zip exif pcntl && \
-    docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ && \
-    docker-php-ext-install gd
+# Install dependencies using uv
+RUN uv sync --frozen --no-install-project --no-dev
 
-# Enable and configure opcache only if OPCACHE_ENABLE is set to "1"
-ARG OPCACHE_ENABLE=0
-RUN if [ $OPCACHE_ENABLE = "1" ]; then \
-    { \
-        echo 'opcache.memory_consumption=128'; \
-        echo 'opcache.interned_strings_buffer=8'; \
-        echo 'opcache.max_accelerated_files=4000'; \
-        echo 'opcache.revalidate_freq=60'; \
-        echo 'opcache.fast_shutdown=1'; \
-        echo 'opcache.enable_cli=1'; \
-        echo 'opcache.enable=1'; \
-    } > /usr/local/etc/php/conf.d/opcache-recommended.ini \
-;fi
+# Copy application source code
+COPY python /app/python
 
-# Install composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Install the project
+RUN uv sync --frozen --no-dev
 
-# Copy necessary folders with correct permissions in a single layer
-COPY --chown=www-data:www-data \
-    storage \
-    bootstrap/cache \
-    rust \
-    /var/www/
+ENV PYTHONPATH=/app
 
-# Then copy remaining files with default permissions
-COPY . /var/www/
+EXPOSE 8000
 
-# Copy entry point, convert line endings and set permissions
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint
-RUN dos2unix /usr/local/bin/entrypoint && \
-    chmod +x /usr/local/bin/entrypoint
-
-# Setup Rust/Cargo
-ENV PATH="/root/.cargo/bin:${PATH}"
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
-    echo 'source $HOME/.cargo/env' >> ~/.bashrc
-
-# Run entrypoint
-CMD ["/usr/local/bin/entrypoint"]
+# Run FastAPI app directly via uv
+CMD ["uv", "run", "--no-sync", "uvicorn", "python.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
