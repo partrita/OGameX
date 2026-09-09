@@ -36,8 +36,13 @@ from python.app.game_objects.buildings import (
     calculate_crystal_energy_consumption,
     calculate_deuterium_energy_consumption,
 )
+from python.app.game_objects.defenses import DEFENSES
+from python.app.game_objects.research import RESEARCH
 from python.app.services.flight_calculator import FlightCalculator
 from python.app.services.resource_calculator import ResourceCalculator
+from python.app.services.battle_engine import RustBattleEngineWrapper
+
+_battle_engine = RustBattleEngineWrapper()
 
 router = APIRouter()
 
@@ -82,6 +87,9 @@ PLANETS_DB: Dict[int, Dict[str, Any]] = {
             14: 4, # Robotics Factory
             21: 5, # Shipyard
             31: 3, # Research Lab
+            22: 4, # Metal Store
+            23: 3, # Crystal Store
+            24: 2, # Deuterium Store
         },
         "ships": {
             202: 10, # Small Cargo
@@ -90,6 +98,14 @@ PLANETS_DB: Dict[int, Dict[str, Any]] = {
             206: 4,  # Cruiser
             207: 1,  # Battleship
             214: 0,  # Deathstar
+        },
+        "defenses": {
+            401: 10, # Rocket Launcher
+            402: 5,  # Light Laser
+        },
+        "research": {
+            109: 3, # Weapon Tech
+            110: 2, # Shield Tech
         }
     }
 }
@@ -124,13 +140,17 @@ def update_planet_resources(state: Dict[str, Any]):
     crystal_gain = (crystal_hourly / 3600.0) * elapsed_seconds * energy_ratio
     deut_gain = (deut_hourly / 3600.0) * elapsed_seconds * energy_ratio
 
-    metal_storage = calculate_building_storage(level=4)
-    crystal_storage = calculate_building_storage(level=3)
-    deut_storage = calculate_building_storage(level=2)
+    metal_storage = calculate_building_storage(level=b.get(22, 0))
+    crystal_storage = calculate_building_storage(level=b.get(23, 0))
+    deut_storage = calculate_building_storage(level=b.get(24, 0))
 
-    state["resources"]["metal"] = min(float(metal_storage), state["resources"]["metal"] + metal_gain)
-    state["resources"]["crystal"] = min(float(crystal_storage), state["resources"]["crystal"] + crystal_gain)
-    state["resources"]["deuterium"] = min(float(deut_storage), state["resources"]["deuterium"] + deut_gain)
+    # ponytail: if over storage, keep current (do not cap down), else cap at storage
+    cur_m = state["resources"]["metal"]
+    state["resources"]["metal"] = cur_m if cur_m >= metal_storage else min(float(metal_storage), cur_m + metal_gain)
+    cur_c = state["resources"]["crystal"]
+    state["resources"]["crystal"] = cur_c if cur_c >= crystal_storage else min(float(crystal_storage), cur_c + crystal_gain)
+    cur_d = state["resources"]["deuterium"]
+    state["resources"]["deuterium"] = cur_d if cur_d >= deut_storage else min(float(deut_storage), cur_d + deut_gain)
 
     return {
         "metal_hourly": metal_hourly * energy_ratio,
@@ -142,6 +162,66 @@ def update_planet_resources(state: Dict[str, Any]):
         "crystal_storage": crystal_storage,
         "deut_storage": deut_storage,
     }
+
+def _find_planet_by_coords(galaxy: int, system: int, position: int):
+    for p in PLANETS_DB.values():
+        c = p["coordinates"]
+        if c["galaxy"] == galaxy and c["system"] == system and c["position"] == position:
+            return p
+    return None
+
+def _resolve_expired_missions():
+    """Resolve arrived fleets: transport resources, battle, or return ships. Minimal."""
+    now = time.time()
+    expired = [m for m in FLEET_MISSIONS if now - m["start_time"] >= m["duration"]]
+    for m in expired:
+        origin = PLANETS_DB.get(m["origin_planet_id"])
+        target = _find_planet_by_coords(m["target"]["galaxy"], m["target"]["system"], m["target"]["position"])
+        # Battle on attack if defender exists
+        if m["mission_type"] == "attack" and target is not None and target["id"] != m["origin_planet_id"]:
+            # Build battle input for fallback engine
+            atk_units = {}
+            for sid, cnt in m["ships"].items():
+                if sid in SHIPS:
+                    s = SHIPS[sid]
+                    atk_units[str(sid)] = {"unit_id": sid, "amount": cnt, "attack_power": float(s.weapon_power), "shield_points": float(s.shield_power), "hull_plating": float(s.structural_integrity / 10), "rapidfire": s.rapidfire}
+            def_units = {}
+            for sid, cnt in target.get("ships", {}).items():
+                if cnt > 0 and sid in SHIPS:
+                    s = SHIPS[sid]
+                    def_units[str(sid)] = {"unit_id": sid, "amount": cnt, "attack_power": float(s.weapon_power), "shield_points": float(s.shield_power), "hull_plating": float(s.structural_integrity / 10), "rapidfire": s.rapidfire}
+            for did, cnt in target.get("defenses", {}).items():
+                if cnt > 0 and did in DEFENSES:
+                    d = DEFENSES[did]
+                    def_units[str(did)] = {"unit_id": did, "amount": cnt, "attack_power": float(d.weapon_power), "shield_points": float(d.shield_power), "hull_plating": float(d.structural_integrity / 10), "rapidfire": d.rapidfire}
+            # Use engine (fallback handles empty)
+            if atk_units or def_units:
+                try:
+                    _battle_engine.execute_battle({"attacker_fleets": [{"fleet_mission_id": m["id"], "owner_id": origin["user_id"] if origin else 0, "units": atk_units}], "defender_fleets": [{"fleet_mission_id": target["id"], "owner_id": target["user_id"], "units": def_units}]})
+                except Exception:
+                    pass
+            # ponytail: no ship loss calc on fallback, return attacker ships to origin (lazy)
+            if origin is not None:
+                for sid, cnt in m["ships"].items():
+                    origin["ships"][sid] = origin["ships"].get(sid, 0) + cnt
+        else:
+            # Transport/deploy/harvest/attack vs empty: return ships + deliver resources
+            if origin is not None:
+                for sid, cnt in m["ships"].items():
+                    origin["ships"][sid] = origin["ships"].get(sid, 0) + cnt
+                # If transport to owned planet, deliver resources
+                res = m.get("resources", {})
+                if target is not None and res:
+                    for k in ("metal", "crystal", "deuterium"):
+                        if res.get(k, 0) > 0:
+                            target["resources"][k] = target["resources"].get(k, 0) + float(res[k])
+                            # cap at storage
+                            storage = calculate_building_storage(target["buildings"].get(22 if k == "metal" else 23 if k == "crystal" else 24, 0))
+                            target["resources"][k] = min(float(storage), target["resources"][k])
+        try:
+            FLEET_MISSIONS.remove(m)
+        except ValueError:
+            pass
 
 @router.post("/auth/register", response_model=UserResponse)
 async def register(req: UserRegisterRequest):
@@ -208,7 +288,9 @@ async def register(req: UserRegisterRequest):
             206: 0,
             207: 0,
             214: 0,
-        }
+        },
+        "defenses": {},
+        "research": {}
     }
 
     return UserResponse(
@@ -237,6 +319,7 @@ async def login(req: UserLoginRequest):
 @router.get("/planet/{planet_id}/overview", response_model=PlanetOverview)
 async def get_planet_overview(planet_id: int):
     """Calculates real-time planet status, accumulated production, and active missions."""
+    _resolve_expired_missions()
     state = PLANETS_DB.get(planet_id, PLANETS_DB.get(1))
     if not state:
         raise HTTPException(status_code=404, detail="Planet not found")
@@ -484,6 +567,105 @@ async def build_ship(planet_id: int, req: BuildShipRequest):
         "remaining_resources": state["resources"]
     }
 
+@router.get("/planet/{planet_id}/defenses", response_model=ShipyardResponse)
+async def get_defenses(planet_id: int):
+    """Returns defenses and counts."""
+    state = PLANETS_DB.get(planet_id, PLANETS_DB.get(1))
+    if not state:
+        raise HTTPException(status_code=404, detail="Planet not found")
+    items = []
+    for did, d_obj in DEFENSES.items():
+        count = state.get("defenses", {}).get(did, 0)
+        can_afford = (
+            state["resources"]["metal"] >= d_obj.price.metal
+            and state["resources"]["crystal"] >= d_obj.price.crystal
+            and state["resources"]["deuterium"] >= d_obj.price.deuterium
+        )
+        items.append(
+            ShipItem(
+                id=did, machine_name=d_obj.machine_name, title=d_obj.title,
+                description=d_obj.description, count=count,
+                cost_metal=d_obj.price.metal, cost_crystal=d_obj.price.crystal,
+                cost_deuterium=d_obj.price.deuterium,
+                structural_integrity=d_obj.structural_integrity, shield_power=d_obj.shield_power,
+                weapon_power=d_obj.weapon_power, cargo_capacity=d_obj.cargo_capacity,
+                base_speed=d_obj.base_speed, fuel_consumption=d_obj.fuel_consumption,
+                can_build=can_afford,
+            )
+        )
+    return ShipyardResponse(planet_id=planet_id, ships=items)
+
+@router.post("/planet/{planet_id}/defenses/build")
+async def build_defense(planet_id: int, req: BuildShipRequest):
+    state = PLANETS_DB.get(planet_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Planet not found")
+    did = req.ship_id
+    if did not in DEFENSES:
+        raise HTTPException(status_code=400, detail="Invalid defense ID")
+    d = DEFENSES[did]
+    total_m = d.price.metal * req.amount
+    total_c = d.price.crystal * req.amount
+    total_d = d.price.deuterium * req.amount
+    if state["resources"]["metal"] < total_m or state["resources"]["crystal"] < total_c or state["resources"]["deuterium"] < total_d:
+        raise HTTPException(status_code=400, detail="Not enough resources")
+    state["resources"]["metal"] -= total_m
+    state["resources"]["crystal"] -= total_c
+    state["resources"]["deuterium"] -= total_d
+    state.setdefault("defenses", {})[did] = state.get("defenses", {}).get(did, 0) + req.amount
+    return {"success": True, "built": req.amount, "total_count": state["defenses"][did], "remaining_resources": state["resources"]}
+
+@router.get("/planet/{planet_id}/research", response_model=BuildingsResponse)
+async def get_research(planet_id: int):
+    state = PLANETS_DB.get(planet_id, PLANETS_DB.get(1))
+    if not state:
+        raise HTTPException(status_code=404, detail="Planet not found")
+    items = []
+    for rid, r_obj in RESEARCH.items():
+        lvl = state.get("research", {}).get(rid, 0)
+        cost_m = int(r_obj.price.metal * (r_obj.price.factor ** lvl))
+        cost_c = int(r_obj.price.crystal * (r_obj.price.factor ** lvl))
+        cost_d = int(r_obj.price.deuterium * (r_obj.price.factor ** lvl))
+        can_afford = state["resources"]["metal"] >= cost_m and state["resources"]["crystal"] >= cost_c and state["resources"]["deuterium"] >= cost_d
+        # lab requirement: level 1 lab needed for any research (ponytail: minimal gate)
+        lab_lvl = state["buildings"].get(31, 0)
+        if lab_lvl == 0:
+            can_afford = False
+        items.append(BuildingItem(id=rid, machine_name=r_obj.machine_name, title=r_obj.title, description=r_obj.description, level=lvl, cost_metal=cost_m, cost_crystal=cost_c, cost_deuterium=cost_d, cost_energy=0, production_hourly=0.0, can_build=can_afford))
+    return BuildingsResponse(planet_id=planet_id, buildings=items)
+
+@router.post("/planet/{planet_id}/research/upgrade")
+async def upgrade_research(planet_id: int, req: UpgradeBuildingRequest):
+    state = PLANETS_DB.get(planet_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Planet not found")
+    rid = req.building_id
+    if rid not in RESEARCH:
+        raise HTTPException(status_code=400, detail="Invalid research ID")
+    if state["buildings"].get(31, 0) == 0:
+        raise HTTPException(status_code=400, detail="Research Lab required")
+    r_obj = RESEARCH[rid]
+    lvl = state.get("research", {}).get(rid, 0)
+    cost_m = int(r_obj.price.metal * (r_obj.price.factor ** lvl))
+    cost_c = int(r_obj.price.crystal * (r_obj.price.factor ** lvl))
+    cost_d = int(r_obj.price.deuterium * (r_obj.price.factor ** lvl))
+    if state["resources"]["metal"] < cost_m or state["resources"]["crystal"] < cost_c or state["resources"]["deuterium"] < cost_d:
+        raise HTTPException(status_code=400, detail="Not enough resources")
+    state["resources"]["metal"] -= cost_m
+    state["resources"]["crystal"] -= cost_c
+    state["resources"]["deuterium"] -= cost_d
+    state.setdefault("research", {})[rid] = lvl + 1
+    return {"success": True, "new_level": lvl + 1, "remaining_resources": state["resources"]}
+
+@router.post("/battle/simulate")
+async def simulate_battle(payload: Dict[str, Any]):
+    """Direct battle simulation endpoint (wraps Rust engine)."""
+    try:
+        result = _battle_engine.execute_battle(payload)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router.get("/galaxy/{galaxy}/{system}", response_model=GalaxyResponse)
 async def get_galaxy_system(galaxy: int, system: int):
     """Returns 1~16 planetary slots in the specified solar system dynamically."""
@@ -661,13 +843,30 @@ async def send_fleet(req: FleetSendRequest):
     if state["resources"]["deuterium"] < total_fuel:
         raise HTTPException(status_code=400, detail="Not enough deuterium for flight fuel.")
 
+    # Resource transport check: cargo + deduct
+    cargo_needed = sum(float(v) for v in req.resources.values()) if req.resources else 0
+    # compute cargo capacity
+    total_cargo_cap = sum(SHIPS[sid].cargo_capacity * cnt for sid, cnt in req.ships.items() if sid in SHIPS)
+    if cargo_needed > total_cargo_cap:
+        raise HTTPException(status_code=400, detail="Not enough cargo capacity for resources")
+    for res_name in ("metal", "crystal", "deuterium"):
+        amt = float(req.resources.get(res_name, 0)) if req.resources else 0
+        if amt > 0 and state["resources"].get(res_name, 0) < amt:
+            raise HTTPException(status_code=400, detail=f"Not enough {res_name}")
+
     global NEXT_MISSION_ID
 
-    # Deduct ships and fuel
+    # Deduct ships and fuel and resources
     for sid, count in req.ships.items():
         state["ships"][sid] -= count
 
     state["resources"]["deuterium"] -= total_fuel
+    resources_payload = {}
+    for k in ("metal", "crystal", "deuterium"):
+        amt = float(req.resources.get(k, 0)) if req.resources else 0
+        if amt > 0:
+            state["resources"][k] -= amt
+            resources_payload[k] = amt
 
     mission_entry = {
         "id": NEXT_MISSION_ID,
@@ -679,6 +878,7 @@ async def send_fleet(req: FleetSendRequest):
             "position": req.target.position,
         },
         "ships": req.ships,
+        "resources": resources_payload,
         "start_time": time.time(),
         "duration": flight_time,
         "status": "flying",

@@ -74,6 +74,32 @@ BUILDINGS[31] = BuildingObject(
     price=GameObjectPrice(metal=200, crystal=400, deuterium=200, energy=0, factor=2.0),
 )
 
+# Storages (ID 22, 23, 24) — minimal reuse, no extra logic
+BUILDINGS[22] = BuildingObject(
+    id=22,
+    machine_name="metal_store",
+    title="Metal Storage",
+    class_name="metalStore",
+    description="Storage for metal.",
+    price=GameObjectPrice(metal=1000, crystal=0, deuterium=0, energy=0, factor=2.0),
+)
+BUILDINGS[23] = BuildingObject(
+    id=23,
+    machine_name="crystal_store",
+    title="Crystal Storage",
+    class_name="crystalStore",
+    description="Storage for crystal.",
+    price=GameObjectPrice(metal=1000, crystal=500, deuterium=0, energy=0, factor=2.0),
+)
+BUILDINGS[24] = BuildingObject(
+    id=24,
+    machine_name="deuterium_store",
+    title="Deuterium Tank",
+    class_name="deuteriumStore",
+    description="Storage for deuterium.",
+    price=GameObjectPrice(metal=1000, crystal=1000, deuterium=0, energy=0, factor=2.0),
+)
+
 # Production Formulas
 def calculate_metal_production(level: int, economy_speed: float = 1.0) -> float:
     if level == 0:
