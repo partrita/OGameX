@@ -33,16 +33,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Check if PHP project exists
+        id: check-php
+        run: |
+          if [ ! -f "composer.json" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "No composer.json - Python project, skip PHP check"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
       - uses: shivammathur/setup-php@v2
+        if: steps.check-php.outputs.skip == 'false'
         with:
           php-version: '8.5'
           coverage: none
 
       - name: Get composer cache directory
+        if: steps.check-php.outputs.skip == 'false'
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache dependencies
+        if: steps.check-php.outputs.skip == 'false'
         uses: actions/cache@v6
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
@@ -50,7 +62,13 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
 
       - name: Install Composer dependencies
+        if: steps.check-php.outputs.skip == 'false'
         run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Run Laravel Pint (PSR-12)
+        if: steps.check-php.outputs.skip == 'false'
         run: composer run cs -- --verbose --test
+
+      - name: Skip - No PHP project
+        if: steps.check-php.outputs.skip == 'true'
+        run: echo "Skipped Pint - Python project has no PHP code"

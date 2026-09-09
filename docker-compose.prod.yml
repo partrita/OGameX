@@ -1,0 +1,76 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ogamex-fastapi-backend
+    restart: unless-stopped
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=ogamex
+      - DB_PASSWORD=ogamex_secret
+      - DB_NAME=ogamex
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ECONOMY_SPEED=1
+      - FLEET_SPEED=1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - ogamex-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: ogamex-frontend-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - ogamex-net
+
+  db:
+    image: mysql:8.0
+    container_name: ogamex-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secret_password
+      MYSQL_DATABASE: ogamex
+      MYSQL_USER: ogamex
+      MYSQL_PASSWORD: ogamex_secret
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - ogamex-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: ogamex-redis
+    restart: unless-stopped
+    networks:
+      - ogamex-net
+
+networks:
+  ogamex-net:
+    driver: bridge
+
+volumes:
+  db_data:

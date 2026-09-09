@@ -34,13 +34,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
+    - name: Check if PHP project exists
+      id: check-php
+      run: |
+        if [ ! -f "composer.json" ]; then
+          echo "skip=true" >> $GITHUB_OUTPUT
+          echo "No composer.json - Python project, skip PHP check"
+        else
+          echo "skip=false" >> $GITHUB_OUTPUT
+        fi
 
     - uses: shivammathur/setup-php@v2
+      if: steps.check-php.outputs.skip == 'false'
       with:
         php-version: '8.5'
         coverage: none
 
     - name: Cache Composer packages
+      if: steps.check-php.outputs.skip == 'false'
       uses: actions/cache@v6
       with:
         path: vendor
@@ -49,7 +60,13 @@ jobs:
           ${{ runner.os }}-php-
 
     - name: Install Dev  Dependencies
+      if: steps.check-php.outputs.skip == 'false'
       run: composer install --no-ansi --no-interaction --no-progress
 
     - name: PHPStan
+      if: steps.check-php.outputs.skip == 'false'
       run: composer run stan
+
+    - name: Skip - No PHP project
+      if: steps.check-php.outputs.skip == 'true'
+      run: echo "Skipped PHPStan - Python project has no PHP code"

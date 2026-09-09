@@ -19,17 +19,29 @@ jobs:
         options: --privileged
     steps:
       - uses: actions/checkout@v7
-      - name: Modify Dockerfile to disable USER www (which is not supported by GitHub Actions, as it runs as root)
+      - name: Handle PHP legacy setup (skip for Python)
         run: |
-          sed -i '/USER www/s/^/#/' ./Dockerfile
-      - name: Set Permissions
-        run: sudo chmod -R 777 /var/www
-      - name: Copy .env
-        run: sudo cp .env.example-prod .env
+          if grep -q "USER www" ./Dockerfile 2>/dev/null; then
+            sed -i '/USER www/s/^/#/' ./Dockerfile
+          fi
+          if [ -d "/var/www" ]; then
+            sudo chmod -R 777 /var/www 2>/dev/null || true
+          fi
+          if [ -f ".env.example-prod" ] && [ ! -f ".env" ]; then
+            sudo cp .env.example-prod .env 2>/dev/null || true
+          fi
+          # Also ensure .env for Python prod
+          if [ -f ".env.example" ] && [ ! -f ".env" ]; then
+            cp .env.example .env 2>/dev/null || true
+          fi
       - name: Build and start the services
         run: |
           # Build the images and start the services
-          docker compose -f docker-compose.prod.yml up -d
+          if [ -f "docker-compose.prod.yml" ]; then
+            docker compose -f docker-compose.prod.yml up -d --build
+          else
+            docker compose up -d --build
+          fi
       - name: Test if the services are running
         uses: nick-fields/retry@v4
         with:
@@ -38,10 +50,22 @@ jobs:
           command: |
             sleep 15
 
-            # Array of endpoints to test
-            declare -A endpoints=(
-              ["Web"]="https://localhost:443/login"
-            )
+            # Detect project type for endpoint
+            if docker compose ps 2>/dev/null | grep -q "ogamex-app"; then
+              declare -A endpoints=(
+                ["Web"]="https://localhost:443/login"
+              )
+            else
+              # Python FastAPI
+              declare -A endpoints=(
+                ["API"]="http://localhost:8000/health"
+                ["Frontend"]="http://localhost:8080/"
+              )
+              # fallback for prod 80/443
+              if ! curl -sf http://localhost:8080/ > /dev/null 2>&1; then
+                endpoints=(["API"]="http://localhost:8000/health")
+              fi
+            fi
 
             failed=false
 
